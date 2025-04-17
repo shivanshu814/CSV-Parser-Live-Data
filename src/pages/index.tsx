@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   LineElement,
@@ -10,42 +11,55 @@ import {
   Legend,
   Tooltip,
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
 
 ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Legend, Tooltip);
 
 export default function Home() {
-  const [data, setData] = useState<any[]>([]);
-  const [latest, setLatest] = useState<any>(null);
+  const [labels, setLabels] = useState<string[]>([]);
+  const [dataPoints, setDataPoints] = useState<number[]>([]);
+  const [lastTimestamp, setLastTimestamp] = useState<string | null>(null);
 
+  // ⏪ Load full CSV history once on first load
+  useEffect(() => {
+    const loadHistory = async () => {
+      const res = await fetch('/api/history');
+      const json = await res.json();
+      const newLabels = json.map((d: any) => new Date(d.timestamp).toLocaleTimeString());
+      const newData = json.map((d: any) => d.avg);
+      setLabels(newLabels);
+      setDataPoints(newData);
+      setLastTimestamp(json[json.length - 1]?.timestamp || null);
+    };
+
+    loadHistory();
+  }, []);
+
+  // ⏱️ Live: append new point every second
   useEffect(() => {
     const interval = setInterval(async () => {
       const res = await fetch('/api/live');
       const json = await res.json();
-      setLatest(json);
-      setData(prev => [...prev.slice(-60), json]); // Keep last 60 entries only
+
+      if (json.timestamp !== lastTimestamp) {
+        setLabels((prev) => [...prev, new Date(json.timestamp).toLocaleTimeString()]);
+        setDataPoints((prev) => [...prev, json.avg]);
+        setLastTimestamp(json.timestamp);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
-
-  // ✅ Calculate average price from all 7 assets
-  const averagePrices = data.map((d) => {
-    const values = Object.values(d.prices) as number[];
-    const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-    return avg;
-  });
+  }, [lastTimestamp]);
 
   const chartData = {
-    labels: data.map((d) => new Date(d.timestamp).toLocaleTimeString()),
+    labels,
     datasets: [
       {
-        label: 'Average Price of 7 Assets',
-        data: averagePrices,
-        fill: false,
+        label: 'Average Price (7 Assets)',
+        data: dataPoints,
         borderColor: 'rgb(75, 192, 192)',
         tension: 0.4,
         pointRadius: 0,
+        fill: false,
         pointHoverRadius: 4,
         cubicInterpolationMode: 'monotone',
       },
@@ -54,59 +68,27 @@ export default function Home() {
 
   const chartOptions = {
     responsive: true,
-    animation: {
-      duration: 0,
-    },
+    animation: { duration: 0 },
     plugins: {
-      legend: {
-        display: true,
-      },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-      },
+      legend: { display: true },
     },
     scales: {
       x: {
-        title: {
-          display: true,
-          text: 'Time',
-        },
+        title: { display: true, text: 'Time' },
+        ticks: { maxTicksLimit: 10 },
       },
       y: {
-        title: {
-          display: true,
-          text: 'Average Price (USD)',
-        },
+        title: { display: true, text: 'Avg Price (USD)' },
       },
     },
   };
 
   return (
-    <main className="p-2 font-mono text-sm">
-      <h1 className="text-xl font-bold mb-4">Real-Time Average Price Chart</h1>
-
-      {latest && (
-        <div className="mb-4">
-          <strong>Latest Time:</strong> {new Date(latest.timestamp).toLocaleTimeString()}<br />
-          <strong>Prices:</strong>{' '}
-          {Object.entries(latest.prices).map(([k, v]) => `${k}: ${v}`).join(', ')}
-        </div>
-      )}
-
-      <div className="mb-6 bg-white rounded-md p-4 shadow">
+    <main className="p-4 font-mono">
+      <h1 className="text-xl font-bold mb-4">Live Full-Day Price Graph</h1>
+      <div className="bg-white rounded p-4 shadow">
         <Line data={chartData} options={chartOptions} />
       </div>
-
-      <h2 className="text-lg font-semibold mb-2">History</h2>
-      <ul className="max-h-[300px] overflow-y-scroll">
-        {data.map((entry, idx) => (
-          <li key={idx}>
-            {new Date(entry.timestamp).toLocaleTimeString()} -{' '}
-            {Object.entries(entry.prices).map(([k, v]) => `${k}: ${v}`).join(', ')}
-          </li>
-        ))}
-      </ul>
     </main>
   );
 }

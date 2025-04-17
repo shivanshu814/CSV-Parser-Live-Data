@@ -6,10 +6,13 @@ const filePath = path.resolve('./public/mock_data.csv');
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n');
-  const line = lines[lines.length - 1];
+  const result: { timestamp: string, avg: number }[] = [];
 
-  const [timestamp, ...values] = line.split(',');
-  const avg = values.map(Number).reduce((a, b) => a + b, 0) / values.length;
+  for (const line of lines.slice(1)) { // skip header
+    const [timestamp, ...values] = line.split(',');
+    const avg = values.map(Number).reduce((a, b) => a + b, 0) / values.length;
+    result.push({ timestamp, avg });
+  }
 
-  res.status(200).json({ timestamp, avg });
+  res.status(200).json(result);
 }
