@@ -3,18 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "live": "npx tsx scripts/live-writer.ts"
+    "dev": "concurrently \"npm run live\" \"next dev\"",
+    "live": "tsx scripts/live-writer.ts",
+    "start": "node server.js",
+    "build": "next build"
   },
   "dependencies": {
     "chart.js": "^4.4.9",
+    "concurrently": "^9.1.2",
     "next": "15.3.1",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tsx": "^4.19.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
