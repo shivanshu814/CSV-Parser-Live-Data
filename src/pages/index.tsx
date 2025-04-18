@@ -19,7 +19,7 @@ export default function Home() {
   const [dataPoints, setDataPoints] = useState<number[]>([]);
   const [lastTimestamp, setLastTimestamp] = useState<string | null>(null);
 
-  // ⏪ Load full CSV history once on first load
+  // load full CSV history once on first load
   useEffect(() => {
     const loadHistory = async () => {
       const res = await fetch('/api/history');
@@ -34,7 +34,7 @@ export default function Home() {
     loadHistory();
   }, []);
 
-  // ⏱️ Live: append new point every second
+  // ⏱append new point every 34 second 
   useEffect(() => {
     const interval = setInterval(async () => {
       const res = await fetch('/api/live');
@@ -45,7 +45,7 @@ export default function Home() {
         setDataPoints((prev) => [...prev, json.avg]);
         setLastTimestamp(json.timestamp);
       }
-    }, 1000);
+    }, 40000);
 
     return () => clearInterval(interval);
   }, [lastTimestamp]);
