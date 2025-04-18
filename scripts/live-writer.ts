@@ -3,7 +3,7 @@ import path from 'path';
 import axios from 'axios';
 
 const filePath = path.resolve('./public/mock_data.csv');
-const CMC_API_KEY = '5684bcd0-b1b8-4482-84f7-fb72257469e9'; 
+const CMC_API_KEY = 'api-key'; 
 const symbols = ['BTC', 'ETH', 'POL', 'SOL', 'XRP', 'DOGE', 'BNB'];
 
 if (!fs.existsSync(filePath)) {
