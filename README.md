@@ -1,5 +1,4 @@
 
-
 ## 📄 `README.md`
 
 ```md
@@ -157,4 +156,3 @@ Returns all rows with calculated average per row:
 - [ ] Use WebSockets for live updates
 - [ ] Add frontend filters
 
----
