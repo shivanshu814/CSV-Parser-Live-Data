@@ -34,7 +34,7 @@ export default function Home() {
     loadHistory();
   }, []);
 
-  // ⏱append new point every 34 second 
+  // ⏱append new point every 40 second 
   useEffect(() => {
     const interval = setInterval(async () => {
       const res = await fetch('/api/live');
