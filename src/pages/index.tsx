@@ -45,7 +45,7 @@ export default function Home() {
         setDataPoints((prev) => [...prev, json.avg]);
         setLastTimestamp(json.timestamp);
       }
-    }, 40000);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [lastTimestamp]);
