@@ -1,40 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
 
-## Getting Started
 
-First, run the development server:
+## 📄 `README.md`
+
+```md
+# 📊 CSV + TimescaleDB Crypto Tracker
+
+This project fetches **live cryptocurrency prices** every second from CoinMarketCap using their public API and:
+
+- 📁 Stores each data point in a **CSV file**
+- 🧠 Inserts the same into a **PostgreSQL TimescaleDB** table
+- 📉 Exposes API to fetch current and historical average prices
+
+---
+
+## 🚀 Tech Stack
+
+- 🔥 **Next.js 15**
+- 🧠 **TimescaleDB** (PostgreSQL extension)
+- 📈 **Chart.js** / Lightweight Charts
+- 📦 **TypeScript**
+- 🧪 **CoinMarketCap API**
+- 🧵 **TailwindCSS**
+
+---
+
+## 🛠️ Setup Instructions
+
+### 1. Clone the repo
+
+```bash
+git clone <repo-url>
+cd CSV-Parser-Live-Data
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Add your `.env.local`
+
+Create a file named `.env.local` in the root:
+
+```env
+DATABASE_URL=postgres://tsdbadmin:shqe0l3u1qxpy2yx@fhhlm10mlp.nnvc5mamw2.tsdb.cloud.timescale.com:39625/tsdb?sslmode=require
+CMC_API_KEY=your_coinmarketcap_api_key  # (optional if using server-side only)
+```
+
+> ⚠️ Keep your `.env.local` file secret and do not commit it.
+
+---
+
+### 4. Run the app (Next.js + Live Writer)
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> This will:
+> - Run `live-writer.ts` to store data every second
+> - Start the Next.js dev server
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+---
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+## 💾 What gets stored in TimescaleDB?
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+Table: `crypto_prices`
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Column Name | Type               | Description             |
+|-------------|--------------------|-------------------------|
+| timestamp   | `TIMESTAMPTZ`      | Time of data capture    |
+| btc         | `DOUBLE PRECISION` | Price of BTC in USD     |
+| eth         | `DOUBLE PRECISION` | Price of ETH in USD     |
+| pol         | `DOUBLE PRECISION` | Price of POL (Polygon)  |
+| sol         | `DOUBLE PRECISION` | Price of Solana         |
+| xrp         | `DOUBLE PRECISION` | Price of XRP            |
+| doge        | `DOUBLE PRECISION` | Price of DOGE           |
+| bnb         | `DOUBLE PRECISION` | Price of BNB            |
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🧪 Sample PostgreSQL Queries
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+Get latest row:
+```sql
+SELECT * FROM crypto_prices ORDER BY timestamp DESC LIMIT 1;
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Get average of each coin over last 10 mins:
+```sql
+SELECT
+  AVG(btc) as avg_btc,
+  AVG(eth) as avg_eth,
+  AVG(pol) as avg_pol
+FROM crypto_prices
+WHERE timestamp > now() - interval '10 minutes';
+```
 
-## Deploy on Vercel
+Get all timestamp + avg:
+```sql
+SELECT
+  timestamp,
+  (btc + eth + pol + sol + xrp + doge + bnb) / 7 as avg_price
+FROM crypto_prices
+ORDER BY timestamp DESC;
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+## 📡 API Endpoints
+
+### `/api/live`
+
+Returns latest price average:
+```json
+{
+  "timestamp": "2025-04-19T05:06:45.000Z",
+  "avg": 1234.56
+}
+```
+
+### `/api/history`
+
+Returns all rows with calculated average per row:
+```json
+[
+  { "timestamp": "...", "avg": ... },
+  ...
+]
+```
+
+---
+
+## 🔁 Scripts Breakdown
+
+```json
+"scripts": {
+  "dev": "concurrently \"npm run live\" \"next dev\"",
+  "live": "tsx scripts/live-writer.ts",
+  "start": "node server.js",
+  "build": "next build"
+}
+```
+
+- `npm run dev` → Starts writer + dev server
+- `npm run live` → Only price logger
+- `next dev` → Only frontend
+
+---
+
+## 📍 Roadmap
+
+- [ ] Add 15m / 1h / 1d interval-based downsampling
+- [ ] Add frontend charts
+- [ ] Use WebSockets for live updates
+- [ ] Add frontend filters
+
+---
